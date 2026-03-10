@@ -1,5 +1,6 @@
 let departments = [];
 let positions = [];
+let allEmployees = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     loadLists();
@@ -18,6 +19,23 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         addEmployee();
     });
+
+    document.getElementById('applyFilters').addEventListener('click', function() {
+        filterEmployees();
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterDepartment').value = '';
+        document.getElementById('filterPosition').value = '';
+        displayEmployees(allEmployees);
+    });
+
+    document.getElementById('searchInput').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            filterEmployees();
+        }
+    });
 });
 
 function loadLists() {
@@ -29,19 +47,31 @@ function loadLists() {
             
             const deptSelect = document.getElementById('departmentSelect');
             const posSelect = document.getElementById('positionSelect');
+            const filterDept = document.getElementById('filterDepartment');
+            const filterPos = document.getElementById('filterPosition');
             
             data.departments.forEach(dept => {
-                const option = document.createElement('option');
-                option.value = dept.id;
-                option.textContent = dept.name;
-                deptSelect.appendChild(option);
+                const option1 = document.createElement('option');
+                option1.value = dept.id;
+                option1.textContent = dept.name;
+                deptSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = dept.id;
+                option2.textContent = dept.name;
+                filterDept.appendChild(option2);
             });
             
             data.positions.forEach(pos => {
-                const option = document.createElement('option');
-                option.value = pos.id;
-                option.textContent = pos.name;
-                posSelect.appendChild(option);
+                const option1 = document.createElement('option');
+                option1.value = pos.id;
+                option1.textContent = pos.name;
+                posSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = pos.id;
+                option2.textContent = pos.name;
+                filterPos.appendChild(option2);
             });
         })
         .catch(error => console.error('Error loading lists:', error));
@@ -51,9 +81,38 @@ function loadEmployees() {
     fetch('/api/employees')
         .then(response => response.json())
         .then(employees => {
+            allEmployees = employees;
             displayEmployees(employees);
         })
         .catch(error => console.error('Error:', error));
+}
+
+function filterEmployees() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const departmentId = document.getElementById('filterDepartment').value;
+    const positionId = document.getElementById('filterPosition').value;
+    
+    let filtered = allEmployees;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(emp => 
+            emp.full_name.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    if (departmentId) {
+        filtered = filtered.filter(emp => 
+            emp.department_id == departmentId
+        );
+    }
+    
+    if (positionId) {
+        filtered = filtered.filter(emp => 
+            emp.position_id == positionId
+        );
+    }
+    
+    displayEmployees(filtered);
 }
 
 function addEmployee() {

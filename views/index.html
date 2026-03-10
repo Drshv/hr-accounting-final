@@ -9,6 +9,20 @@
     <h1>HR Accounting</h1>
     
     <button id="addEmployeeBtn">Add Employee</button>
+        <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search by full name...">
+        
+        <select id="filterDepartment">
+            <option value="">All Departments</option>
+        </select>
+        
+        <select id="filterPosition">
+            <option value="">All Positions</option>
+        </select>
+        
+        <button id="applyFilters">Apply Filters</button>
+        <button id="clearFilters">Clear</button>
+    </div>
     
     <div id="employeeForm" style="display: none;">
         <h2>Add New Employee</h2>
