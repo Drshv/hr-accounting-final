@@ -7,9 +7,10 @@ const PORT = 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-    res.send('Server is running');
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
 app.get('/api/employees', (req, res) => {
