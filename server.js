@@ -78,6 +78,73 @@ app.post('/api/employees', (req, res) => {
     });
 });
 
+app.put('/api/employees/:id', (req, res) => {
+    const id = req.params.id;
+    const {
+        full_name, birth_date, passport_series, passport_number,
+        phone, email, address, department_id, position_id,
+        salary, hire_date
+    } = req.body;
+
+    db.get('SELECT is_fired FROM employees WHERE id = ?', [id], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (row.is_fired === 1) {
+            res.status(400).json({ error: 'Cannot edit fired employee' });
+            return;
+        }
+
+        const sql = `
+            UPDATE employees 
+            SET full_name = ?, 
+                birth_date = ?, 
+                passport_series = ?,
+                passport_number = ?, 
+                phone = ?, 
+                email = ?,
+                address = ?, 
+                department_id = ?, 
+                position_id = ?,
+                salary = ?, 
+                hire_date = ?, 
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+
+        db.run(sql, [
+            full_name, birth_date, passport_series,
+            passport_number, phone, email,
+            address, department_id, position_id,
+            salary, hire_date, id
+        ], function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'Employee updated successfully' });
+        });
+    });
+});
+
+app.put('/api/employees/:id/fire', (req, res) => {
+    const id = req.params.id;
+    const today = new Date().toISOString().split('T')[0];
+    
+    db.run(
+        'UPDATE employees SET is_fired = 1, fired_at = ? WHERE id = ?',
+        [today, id],
+        function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'Employee fired successfully' });
+        }
+    );
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
