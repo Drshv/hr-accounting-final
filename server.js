@@ -34,6 +34,50 @@ app.get('/api/employees', (req, res) => {
     });
 });
 
+app.get('/api/lists', (req, res) => {
+    db.all('SELECT * FROM departments', [], (err, departments) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        db.all('SELECT * FROM positions', [], (err, positions) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ departments, positions });
+        });
+    });
+});
+
+app.post('/api/employees', (req, res) => {
+    const {
+        full_name, birth_date, passport_series, passport_number,
+        phone, email, address, department_id, position_id,
+        salary, hire_date
+    } = req.body;
+
+    const sql = `
+        INSERT INTO employees (
+            full_name, birth_date, passport_series, passport_number,
+            phone, email, address, department_id, position_id,
+            salary, hire_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(sql, [
+        full_name, birth_date, passport_series, passport_number,
+        phone, email, address, department_id, position_id,
+        salary, hire_date
+    ], function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ message: 'Employee added successfully' });
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

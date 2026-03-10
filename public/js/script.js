@@ -1,23 +1,34 @@
 let departments = [];
 let positions = [];
 let allEmployees = [];
+let editingId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded');
     loadLists();
     loadEmployees();
 
     document.getElementById('addEmployeeBtn').addEventListener('click', function() {
+        console.log('Add button clicked');
+        editingId = null;
+        document.getElementById('formTitle').textContent = 'Add New Employee';
         document.getElementById('employeeForm').style.display = 'block';
+        document.getElementById('employeeFormData').reset();
     });
 
     document.getElementById('cancelForm').addEventListener('click', function() {
         document.getElementById('employeeForm').style.display = 'none';
         document.getElementById('employeeFormData').reset();
+        editingId = null;
     });
 
     document.getElementById('employeeFormData').addEventListener('submit', function(e) {
         e.preventDefault();
-        addEmployee();
+        if (editingId) {
+            updateEmployee();
+        } else {
+            addEmployee();
+        }
     });
 
     document.getElementById('applyFilters').addEventListener('click', function() {
@@ -36,12 +47,38 @@ document.addEventListener('DOMContentLoaded', function() {
             filterEmployees();
         }
     });
+
+    // Маски ввода
+    setTimeout(() => {
+        const phoneInput = document.querySelector('input[name="phone"]');
+        if (phoneInput && typeof IMask !== 'undefined') {
+            IMask(phoneInput, {
+                mask: '+{7}(000)000-00-00'
+            });
+        }
+
+        const seriesInput = document.querySelector('input[name="passport_series"]');
+        if (seriesInput && typeof IMask !== 'undefined') {
+            IMask(seriesInput, {
+                mask: '0000'
+            });
+        }
+
+        const numberInput = document.querySelector('input[name="passport_number"]');
+        if (numberInput && typeof IMask !== 'undefined') {
+            IMask(numberInput, {
+                mask: '000000'
+            });
+        }
+    }, 500);
 });
 
 function loadLists() {
+    console.log('Loading lists...');
     fetch('/api/lists')
         .then(response => response.json())
         .then(data => {
+            console.log('Lists loaded:', data);
             departments = data.departments;
             positions = data.positions;
             
@@ -49,6 +86,20 @@ function loadLists() {
             const posSelect = document.getElementById('positionSelect');
             const filterDept = document.getElementById('filterDepartment');
             const filterPos = document.getElementById('filterPosition');
+            
+            // Очищаем существующие опции (кроме первой)
+            while (deptSelect.options.length > 0) {
+                deptSelect.remove(0);
+            }
+            while (posSelect.options.length > 0) {
+                posSelect.remove(0);
+            }
+            while (filterDept.options.length > 1) {
+                filterDept.remove(1);
+            }
+            while (filterPos.options.length > 1) {
+                filterPos.remove(1);
+            }
             
             data.departments.forEach(dept => {
                 const option1 = document.createElement('option');
@@ -137,6 +188,36 @@ function addEmployee() {
     .catch(error => console.error('Error:', error));
 }
 
+function updateEmployee() {
+    const form = document.getElementById('employeeFormData');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/api/employees/${editingId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            alert(result.message);
+            form.reset();
+            document.getElementById('employeeForm').style.display = 'none';
+            editingId = null;
+            loadEmployees();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating employee');
+    });
+}
+
 function fireEmployee(id) {
     if (confirm('Are you sure you want to fire this employee?')) {
         fetch(`/api/employees/${id}/fire`, {
@@ -149,6 +230,29 @@ function fireEmployee(id) {
         })
         .catch(error => console.error('Error:', error));
     }
+}
+
+function editEmployee(id) {
+    const employee = allEmployees.find(emp => emp.id === id);
+    if (!employee) return;
+    
+    editingId = id;
+    document.getElementById('formTitle').textContent = 'Edit Employee';
+    
+    document.querySelector('input[name="full_name"]').value = employee.full_name;
+    document.querySelector('input[name="birth_date"]').value = employee.birth_date;
+    document.querySelector('input[name="passport_series"]').value = employee.passport_series;
+    document.querySelector('input[name="passport_number"]').value = employee.passport_number;
+    document.querySelector('input[name="phone"]').value = employee.phone;
+    document.querySelector('input[name="email"]').value = employee.email || '';
+    document.querySelector('textarea[name="address"]').value = employee.address;
+    document.querySelector('select[name="department_id"]').value = employee.department_id;
+    document.querySelector('select[name="position_id"]').value = employee.position_id;
+    document.querySelector('input[name="salary"]').value = employee.salary;
+    document.querySelector('input[name="hire_date"]').value = employee.hire_date;
+    
+    document.getElementById('employeeForm').style.display = 'block';
+    document.getElementById('employeeForm').scrollIntoView({ behavior: 'smooth' });
 }
 
 function displayEmployees(employees) {
@@ -182,9 +286,11 @@ function displayEmployees(employees) {
         html += `<td>${emp.is_fired === 1 ? 'Fired' : 'Active'}</td>`;
         html += '<td>';
         if (emp.is_fired !== 1) {
+            html += `<button onclick="editEmployee(${emp.id})">Edit</button> `;
             html += `<button onclick="fireEmployee(${emp.id})">Fire</button>`;
         } else {
-            html += '<button disabled>Fired</button>';
+            html += '<button disabled>Edit</button> ';
+            html += '<button disabled>Fire</button>';
         }
         html += '</td>';
         html += '</tr>';
